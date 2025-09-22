@@ -121,6 +121,7 @@ void poly_decompress(poly *r, const uint8_t a[KYBER_POLYCOMPRESSEDBYTES])
 *                            (needs space for KYBER_POLYBYTES bytes)
 *              - const poly *a: pointer to input polynomial
 **************************************************/
+// 将单一的多项式子序列化，a为多项式
 void poly_tobytes(uint8_t r[KYBER_POLYBYTES], const poly *a)
 {
   unsigned int i;
@@ -128,11 +129,12 @@ void poly_tobytes(uint8_t r[KYBER_POLYBYTES], const poly *a)
 
   for(i=0;i<KYBER_N/2;i++) {
     // map to positive standard representatives
+    // a中的coeff属性为多项式的系数，这里一次处理两个系数
     t0  = a->coeffs[2*i];
-    t0 += ((int16_t)t0 >> 15) & KYBER_Q;
+    t0 += ((int16_t)t0 >> 15) & KYBER_Q;   //这一步是为了处理负系数，当系数为负数时右移15为属于符号右移，会变成0xFFFF,使得负数加上kyber_Q
     t1 = a->coeffs[2*i+1];
     t1 += ((int16_t)t1 >> 15) & KYBER_Q;
-    r[3*i+0] = (t0 >> 0);
+    r[3*i+0] = (t0 >> 0);                 //计算机中是大端存储，因此低地址存t0的低8位，次高地址存t0的高4位和t1的低4位
     r[3*i+1] = (t0 >> 8) | (t1 << 4);
     r[3*i+2] = (t1 >> 4);
   }

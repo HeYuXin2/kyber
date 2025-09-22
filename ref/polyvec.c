@@ -6,7 +6,7 @@
 /*************************************************
 * Name:        polyvec_compress
 *
-* Description: Compress and serialize vector of polynomials
+* Description: Compress and serialize vector of polynomials 负责对多项式系数压缩并序列化
 *
 * Arguments:   - uint8_t *r: pointer to output byte array
 *                            (needs space for KYBER_POLYVECCOMPRESSEDBYTES)
@@ -17,22 +17,29 @@ void polyvec_compress(uint8_t r[KYBER_POLYVECCOMPRESSEDBYTES], const polyvec *a)
   unsigned int i,j,k;
   uint64_t d0;
 
+
+//使用#if条件编译有助于减少编译后的代码规模，当kyber等级为2或3时，将8个至少12位的数压缩到11位，从96位压缩到88位
 #if (KYBER_POLYVECCOMPRESSEDBYTES == (KYBER_K * 352))
   uint16_t t[8];
   for(i=0;i<KYBER_K;i++) {
     for(j=0;j<KYBER_N/8;j++) {
       for(k=0;k<8;k++) {
         t[k]  = a->vec[i].coeffs[8*j+k];
-        t[k] += ((int16_t)t[k] >> 15) & KYBER_Q;
+        t[k] += ((int16_t)t[k] >> 15) & KYBER_Q;    //进行非负化处理
 /*      t[k]  = ((((uint32_t)t[k] << 11) + KYBER_Q/2)/KYBER_Q) & 0x7ff; */
         d0 = t[k];
         d0 <<= 11;
         d0 += 1664;
         d0 *= 645084;
         d0 >>= 31;
+        //上述操作相当于t[k] = (t[k] * 2048 + Q/2) / Q（11位模式），
+        //由于64位除法相当耗时，因此采用乘法和位移运算替代，即除以Q可以转换为乘以645084除以2的31次方
+        //加上Q/2实现四舍五入
         t[k] = d0 & 0x7ff;
+        //由于得到的数必然小于2048，因此取前11位
       }
 
+      //位移过程，注意大小端的区别
       r[ 0] = (t[0] >>  0);
       r[ 1] = (t[0] >>  8) | (t[1] << 3);
       r[ 2] = (t[1] >>  5) | (t[2] << 6);
@@ -48,6 +55,7 @@ void polyvec_compress(uint8_t r[KYBER_POLYVECCOMPRESSEDBYTES], const polyvec *a)
     }
   }
 #elif (KYBER_POLYVECCOMPRESSEDBYTES == (KYBER_K * 320))
+  // 512和768的压缩过程，允许压缩到10位,至于为什么选10位或者11位，以我目前的水平还无从得知
   uint16_t t[4];
   for(i=0;i<KYBER_K;i++) {
     for(j=0;j<KYBER_N/4;j++) {
@@ -136,10 +144,11 @@ void polyvec_decompress(polyvec *r, const uint8_t a[KYBER_POLYVECCOMPRESSEDBYTES
 *                            (needs space for KYBER_POLYVECBYTES)
 *              - const polyvec *a: pointer to input vector of polynomials
 **************************************************/
+// 多项式向量序列化
 void polyvec_tobytes(uint8_t r[KYBER_POLYVECBYTES], const polyvec *a)
 {
   unsigned int i;
-  for(i=0;i<KYBER_K;i++)
+  for(i=0;i<KYBER_K;i++)       //kyberK为多项式个数
     poly_tobytes(r+i*KYBER_POLYBYTES, &a->vec[i]);
 }
 
@@ -153,6 +162,7 @@ void polyvec_tobytes(uint8_t r[KYBER_POLYVECBYTES], const polyvec *a)
 *              - const polyvec *a: pointer to input vector of polynomials
 *                                  (of length KYBER_POLYVECBYTES)
 **************************************************/
+// 反序列化，内容和序列化相似，这里不多赘述
 void polyvec_frombytes(polyvec *r, const uint8_t a[KYBER_POLYVECBYTES])
 {
   unsigned int i;

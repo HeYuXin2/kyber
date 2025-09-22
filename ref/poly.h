@@ -12,6 +12,8 @@ typedef struct{
   int16_t coeffs[KYBER_N];
 } poly;
 
+
+//使用命名空间隔离，避免命名冲突并规范化函数命名
 #define poly_compress KYBER_NAMESPACE(poly_compress)
 void poly_compress(uint8_t r[KYBER_POLYCOMPRESSEDBYTES], const poly *a);
 #define poly_decompress KYBER_NAMESPACE(poly_decompress)
