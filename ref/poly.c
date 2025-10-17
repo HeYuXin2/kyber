@@ -262,7 +262,7 @@ void poly_getnoise_eta2(poly *r, const uint8_t seed[KYBER_SYMBYTES], uint8_t non
 **************************************************/
 void poly_ntt(poly *r)
 {
-  ntt(r->coeffs);
+  ntt(r->coeffs);        //传入系数
   poly_reduce(r);
 }
 
@@ -322,6 +322,7 @@ void poly_tomont(poly *r)
 *
 * Arguments:   - poly *r: pointer to input/output polynomial
 **************************************************/
+// 对256个多项式的值进行巴雷特规约
 void poly_reduce(poly *r)
 {
   unsigned int i;

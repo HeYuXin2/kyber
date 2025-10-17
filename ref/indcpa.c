@@ -204,6 +204,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[KYBER_SYMBYTES], int transposed)
 * Description: Generates public and private key for the CPA-secure
 *              public-key encryption scheme underlying Kyber
 *              生成CPA安全标准下的公钥和私钥，加密环节，同时还是确定性函数，输入相同种子生成相同的公私钥对
+*              由密钥分发者生成私钥sk，与矩阵相乘并附上矩阵种子后作为公钥
 *
 * Arguments:   - uint8_t *pk: pointer to output public key
 *                             (of length KYBER_INDCPA_PUBLICKEYBYTES bytes)
@@ -235,19 +236,19 @@ void indcpa_keypair_derand(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
   for(i=0;i<KYBER_K;i++)
     poly_getnoise_eta1(&e.vec[i], noiseseed, nonce++);          //同理获取噪声的多项式，注意两次的noiseseed虽然相同，但是nonce不同，生成的自然不同
 
-  polyvec_ntt(&skpv);
-  polyvec_ntt(&e);                    
+  polyvec_ntt(&skpv);            //ntt将私钥多项式转换为点值表示
+  polyvec_ntt(&e);               //噪声同样转化为点值表示
 
   // matrix-vector multiplication
   for(i=0;i<KYBER_K;i++) {
-    polyvec_basemul_acc_montgomery(&pkpv.vec[i], &a[i], &skpv);
+    polyvec_basemul_acc_montgomery(&pkpv.vec[i], &a[i], &skpv);     //矩阵A和私钥sk值的点乘，基于ntt域
     poly_tomont(&pkpv.vec[i]);
   }
 
-  polyvec_add(&pkpv, &pkpv, &e);
-  polyvec_reduce(&pkpv);
+  polyvec_add(&pkpv, &pkpv, &e);          //多项式相加
+  polyvec_reduce(&pkpv);                  //系数约减
 
-  pack_sk(sk, &skpv);
+  pack_sk(sk, &skpv);                   //封装
   pack_pk(pk, &pkpv, publicseed);
 }
 
@@ -268,6 +269,7 @@ void indcpa_keypair_derand(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
 *                                      (of length KYBER_SYMBYTES) to deterministically
 *                                      generate all randomness
 **************************************************/
+//密钥封装，与所学流程相似，不多赘述
 void indcpa_enc(uint8_t c[KYBER_INDCPA_BYTES],
                 const uint8_t m[KYBER_INDCPA_MSGBYTES],
                 const uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
@@ -322,6 +324,7 @@ void indcpa_enc(uint8_t c[KYBER_INDCPA_BYTES],
 *              - const uint8_t *sk: pointer to input secret key
 *                                   (of length KYBER_INDCPA_SECRETKEYBYTES)
 **************************************************/
+//密钥解封，同样与所学流程相同，不多赘述
 void indcpa_dec(uint8_t m[KYBER_INDCPA_MSGBYTES],
                 const uint8_t c[KYBER_INDCPA_BYTES],
                 const uint8_t sk[KYBER_INDCPA_SECRETKEYBYTES])

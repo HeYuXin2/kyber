@@ -4,7 +4,7 @@
 
 /*************************************************
 * Name:        montgomery_reduce
-*
+*             
 * Description: Montgomery reduction; given a 32-bit integer a, computes
 *              16-bit integer congruent to a * R^-1 mod q, where R=2^16
 *
@@ -13,6 +13,8 @@
 *
 * Returns:     integer in {-q+1,...,q-1} congruent to a * R^-1 modulo q.
 **************************************************/
+//蒙哥马利约减，此处为将输入乘上R的逆元，将求R的逆元模q转化为乘q模R的逆元作差并进行位移
+//疑问：为什么这里不用对返回值是否大于q进行判断
 int16_t montgomery_reduce(int32_t a)
 {
   int16_t t;
@@ -32,11 +34,12 @@ int16_t montgomery_reduce(int32_t a)
 *
 * Returns:     integer in {-(q-1)/2,...,(q-1)/2} congruent to a modulo q.
 **************************************************/
+//巴雷特约减，将模操作近似为乘法和位移
 int16_t barrett_reduce(int16_t a) {
   int16_t t;
-  const int16_t v = ((1<<26) + KYBER_Q/2)/KYBER_Q;
+  const int16_t v = ((1<<26) + KYBER_Q/2)/KYBER_Q;    //求出m = 2^k/q,加上q/2是为了进行四舍五入更精确
 
-  t  = ((int32_t)v*a + (1<<25)) >> 26;
+  t  = ((int32_t)v*a + (1<<25)) >> 26;       //乘法再位移，加上2^25次方是为了四舍五入
   t *= KYBER_Q;
   return a - t;
 }

@@ -34,6 +34,7 @@ void init_ntt() {
       zetas[i] += KYBER_Q;
   }
 }
+
 */
 
 const int16_t zetas[128] = {
@@ -65,6 +66,7 @@ const int16_t zetas[128] = {
 *
 * Returns 16-bit integer congruent to a*b*R^{-1} mod q
 **************************************************/
+//fqmul为有限域乘法，基于蒙哥马利约减来计算有限域下的两数乘法，
 static int16_t fqmul(int16_t a, int16_t b) {
   return montgomery_reduce((int32_t)a*b);
 }
@@ -76,18 +78,20 @@ static int16_t fqmul(int16_t a, int16_t b) {
 *              input is in standard order, output is in bitreversed order
 *
 * Arguments:   - int16_t r[256]: pointer to input/output vector of elements of Zq
+*               注意到r是系数的副本，而不是系数的指针
 **************************************************/
+//输入多项式的256个系数，对多项式内的系数进行原地NTT变换，系数中计算到最后存储的是从1到256次方根的函数值
 void ntt(int16_t r[256]) {
   unsigned int len, start, j, k;
   int16_t t, zeta;
 
   k = 1;
-  for(len = 128; len >= 2; len >>= 1) {
-    for(start = 0; start < 256; start = j + len) {
-      zeta = zetas[k++];
+  for(len = 128; len >= 2; len >>= 1) {         //蝶形计算，需要进行比特逆序，因此用这种方法循环
+    for(start = 0; start < 256; start = j + len) {       
+      zeta = zetas[k++];                          //旋转因子集合，是提前精心设计好的，其中“原根”为17，即第256次单位原根为17
       for(j = start; j < start + len; j++) {
-        t = fqmul(zeta, r[j + len]);
-        r[j + len] = r[j] - t;
+        t = fqmul(zeta, r[j + len]);          //蒙哥马特模乘，减少大数所占的比特位和除法开销
+        r[j + len] = r[j] - t;                //ntt的计算公式
         r[j] = r[j] + t;
       }
     }
@@ -136,6 +140,7 @@ void invntt(int16_t r[256]) {
 *              - const int16_t b[2]: pointer to the second factor
 *              - int16_t zeta: integer defining the reduction polynomial
 **************************************************/
+//负包裹卷积下的多项式值的点乘
 void basemul(int16_t r[2], const int16_t a[2], const int16_t b[2], int16_t zeta)
 {
   r[0]  = fqmul(a[1], b[1]);

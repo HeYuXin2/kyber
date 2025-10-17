@@ -177,6 +177,7 @@ void polyvec_frombytes(polyvec *r, const uint8_t a[KYBER_POLYVECBYTES])
 *
 * Arguments:   - polyvec *r: pointer to in/output vector of polynomials
 **************************************************/
+//多项式向量NTT，对k个多项式调用ntt转为系数表示，最后再对值模3329
 void polyvec_ntt(polyvec *r)
 {
   unsigned int i;
