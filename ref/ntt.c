@@ -140,7 +140,7 @@ void invntt(int16_t r[256]) {
 *              - const int16_t b[2]: pointer to the second factor
 *              - int16_t zeta: integer defining the reduction polynomial
 **************************************************/
-//负包裹卷积下的多项式值的点乘
+//负包裹卷积下的多项式值的点乘，看不懂，以后再回来看
 void basemul(int16_t r[2], const int16_t a[2], const int16_t b[2], int16_t zeta)
 {
   r[0]  = fqmul(a[1], b[1]);

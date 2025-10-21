@@ -209,6 +209,7 @@ void polyvec_invntt_tomont(polyvec *r)
 *            - const polyvec *a: pointer to first input vector of polynomials
 *            - const polyvec *b: pointer to second input vector of polynomials
 **************************************************/
+// a和b多项式向量的点乘，结果存放在向量r中
 void polyvec_basemul_acc_montgomery(poly *r, const polyvec *a, const polyvec *b)
 {
   unsigned int i;
@@ -216,11 +217,11 @@ void polyvec_basemul_acc_montgomery(poly *r, const polyvec *a, const polyvec *b)
 
   poly_basemul_montgomery(r, &a->vec[0], &b->vec[0]);
   for(i=1;i<KYBER_K;i++) {
-    poly_basemul_montgomery(&t, &a->vec[i], &b->vec[i]);
-    poly_add(r, r, &t);
+    poly_basemul_montgomery(&t, &a->vec[i], &b->vec[i]);      //多项式相乘，但是两个多项式为点值表示
+    poly_add(r, r, &t);        //将点乘结果相加
   }
 
-  poly_reduce(r);
+  poly_reduce(r);        //将多项式系数进行模运算，避免超出域
 }
 
 /*************************************************

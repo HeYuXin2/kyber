@@ -289,6 +289,7 @@ void poly_invntt_tomont(poly *r)
 *              - const poly *a: pointer to first input polynomial
 *              - const poly *b: pointer to second input polynomial
 **************************************************/
+// 两个多项式在NTT域下相乘，同时进行逆NTT过程，将点值表示转化为系数表示
 void poly_basemul_montgomery(poly *r, const poly *a, const poly *b)
 {
   unsigned int i;
@@ -306,12 +307,13 @@ void poly_basemul_montgomery(poly *r, const poly *a, const poly *b)
 *
 * Arguments:   - poly *r: pointer to input/output polynomial
 **************************************************/
+//将多项式的系数转到蒙哥马利域中
 void poly_tomont(poly *r)
 {
   unsigned int i;
-  const int16_t f = (1ULL << 32) % KYBER_Q;
+  const int16_t f = (1ULL << 32) % KYBER_Q;       //系数先乘R^2,即(2^16)^2
   for(i=0;i<KYBER_N;i++)
-    r->coeffs[i] = montgomery_reduce((int32_t)r->coeffs[i]*f);
+    r->coeffs[i] = montgomery_reduce((int32_t)r->coeffs[i]*f);    //再对乘后的系数进行规约
 }
 
 /*************************************************

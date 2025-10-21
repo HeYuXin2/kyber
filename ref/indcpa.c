@@ -204,7 +204,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[KYBER_SYMBYTES], int transposed)
 * Description: Generates public and private key for the CPA-secure
 *              public-key encryption scheme underlying Kyber
 *              生成CPA安全标准下的公钥和私钥，加密环节，同时还是确定性函数，输入相同种子生成相同的公私钥对
-*              由密钥分发者生成私钥sk，与矩阵相乘并附上矩阵种子后作为公钥
+*              由密钥分发者生成私钥sk，与矩阵相乘并附上矩阵种子后作为公钥，生成的公钥和私钥以序列化的形式存在
 *
 * Arguments:   - uint8_t *pk: pointer to output public key
 *                             (of length KYBER_INDCPA_PUBLICKEYBYTES bytes)
@@ -225,8 +225,8 @@ void indcpa_keypair_derand(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
   uint8_t nonce = 0;
   polyvec a[KYBER_K], e, pkpv, skpv;
 
-  memcpy(buf, coins, KYBER_SYMBYTES);
-  buf[KYBER_SYMBYTES] = KYBER_K;       //在随机种子末尾添加安全等级数2，3，4，保证相同种子在不同安全等级下生成的随机数相同
+  memcpy(buf, coins, KYBER_SYMBYTES);  //复制随机数coins到buf里
+  buf[KYBER_SYMBYTES] = KYBER_K;       //在随机种子末尾添加安全等级数2，3，4，保证相同种子在不同安全等级下生成的随机数不同
   hash_g(buf, buf, KYBER_SYMBYTES+1);  //使用哈希函数将33位数拓展位64位数
 
   gen_a(a, publicseed);               //根据公钥中的种子生成矩阵A
@@ -241,14 +241,14 @@ void indcpa_keypair_derand(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
 
   // matrix-vector multiplication
   for(i=0;i<KYBER_K;i++) {
-    polyvec_basemul_acc_montgomery(&pkpv.vec[i], &a[i], &skpv);     //矩阵A和私钥sk值的点乘，基于ntt域
-    poly_tomont(&pkpv.vec[i]);
+    polyvec_basemul_acc_montgomery(&pkpv.vec[i], &a[i], &skpv);     //矩阵A和私钥sk值的点乘，基于ntt域，A行向量乘私钥
+    poly_tomont(&pkpv.vec[i]);           //将多项式系数转入蒙哥马利域中
   }
 
   polyvec_add(&pkpv, &pkpv, &e);          //多项式相加
   polyvec_reduce(&pkpv);                  //系数约减
 
-  pack_sk(sk, &skpv);                   //封装
+  pack_sk(sk, &skpv);                   //封装公钥和私钥，即进行序列化，方便网络传输
   pack_pk(pk, &pkpv, publicseed);
 }
 
@@ -269,7 +269,7 @@ void indcpa_keypair_derand(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
 *                                      (of length KYBER_SYMBYTES) to deterministically
 *                                      generate all randomness
 **************************************************/
-//密钥封装，与所学流程相似，不多赘述
+//密钥封装，与所学流程相似。c为输出密文，m为加密的明文，pk为输入的公钥，coin为输入的随机数种子
 void indcpa_enc(uint8_t c[KYBER_INDCPA_BYTES],
                 const uint8_t m[KYBER_INDCPA_MSGBYTES],
                 const uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
